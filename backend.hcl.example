@@ -1,0 +1,8 @@
+# Configuration for the S3 Backend
+# Use this with: terraform init -backend-config=backend.hcl
+
+bucket         = "your-unique-s3-bucket-name"
+key            = "terraform.tfstate"
+region         = "eu-north-1"
+dynamodb_table = "your-dynamodb-table-name"
+encrypt        = true
