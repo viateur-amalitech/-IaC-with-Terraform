@@ -22,46 +22,40 @@ This project demonstrates how to define and deploy foundational AWS infrastructu
 
 ## Step-by-Step Deployment Instructions
 
-### 1. Configure Variable Values
-Open `terraform.tfvars` and provide your specific values:
-*   `region`: Your chosen AWS Region (e.g., `eu-north-1`).
-*   `s3_bucket_name`: MUST BE GLOBALLY UNIQUE (e.g., `viateur-yourname-tfstate-lab-01`).
-*   `my_ip`: Your public IP for SSH access (use `0.0.0.0/0` for open access or your specific IP).
+### 1. Setup Configuration Files
+Since sensitive configuration files are not tracked in Git, you must create them from the provided templates:
+```bash
+cp terraform.tfvars.example terraform.tfvars
+cp backend.hcl.example backend.hcl
+```
+Open both files and update the values with your specific AWS details (Region, Bucket Name, Key Name, etc.).
 
 ### 2. Initial Deployment (Local State)
-Check that the `backend "s3"` block in `backend.tf` is **commented out**. 
-
-Initialize and deploy the infrastructure locally first:
+Ensure the `backend "s3"` block in `backend.tf` is **commented out** for the first run. 
+Initialize and deploy the infrastructure locally to create the foundational resources:
 ```bash
 terraform init
-terraform plan
-terraform apply
+terraform apply -auto-approve
 ```
-*Type `yes` when prompted.*
+This step creates the VPC and EC2, as well as the **S3 Bucket** and **DynamoDB Table** required for the remote backend.
 
-This creates the VPC and EC2, as well as the **S3 Bucket** and **DynamoDB Table** that will soon hold your state.
-
-### 3. Migrate to Remote Backend (Partial Configuration)
-Once the resources are created:
-1.  Open `backend.tf` and **uncomment** the `terraform` block.
-2.  Run the initialization by passing the configuration file:
+### 3. Migrate to Remote Backend
+Once the S3 bucket exists:
+1.  **Uncomment** the `backend "s3" {}` block in `backend.tf`.
+2.  Initialize the backend migration:
     ```bash
-    terraform init -backend-config=backend.hcl
+    terraform init -backend-config=backend.hcl -migrate-state
     ```
-3.  Terraform will ask: *"Do you want to copy existing state to the new backend?"*
-    Type **`yes`**.
+3.  Type **`yes`** when prompted to copy the local state to S3.
 
 ### 4. Verification
-*   **AWS Console**: Verify the EC2 instance is running and the VPC is created.
-*   **S3**: Check your bucket for the `terraform.tfstate` file.
-*   **Nginx Test**: Run `curl http://<INSTANCE_PUBLIC_IP>` to see the Nginx welcome message.
-*   **SSH Test**: If you provided an existing key pair, you can SSH into the instance using:
-    ```bash
-    ssh -i viateur.pem ec2-user@<INSTANCE_PUBLIC_IP>
-    ```
+*   **Web Server**: Run `curl http://$(terraform output -raw instance_public_ip)` to see the Nginx welcome message.
+*   **Remote State**: Verify the `terraform.tfstate` file exists in your S3 bucket via the AWS Console.
+*   **Locking**: Verify the DynamoDB table `terraform-state-locks` is created for state locking.
 
 ### 5. Cleanup
-To delete all resources and the backend state:
+To destroy all provisioned resources:
 ```bash
-terraform destroy
+# Update backend.tf by commenting out the s3 block and running init -reconfigure first if S3 is deleted
+terraform destroy -auto-approve
 ```
