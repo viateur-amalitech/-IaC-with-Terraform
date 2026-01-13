@@ -2,6 +2,9 @@
 
 This project demonstrates how to define and deploy foundational AWS infrastructure using Terraform. It specifically covers the setup of a VPC, networking components, and an EC2 instance, followed by a migration to a remote backend (S3 + DynamoDB) for state management and locking.
 
+## Infrastructure Architecture
+![Project Plan](./screenshoots/plan.png)
+
 ## Objectives
 *   Define foundational AWS resources using Terraform.
 *   Implement a remote backend with S3 and DynamoDB locking.
@@ -13,6 +16,7 @@ This project demonstrates how to define and deploy foundational AWS infrastructu
 *   `terraform.tfvars`: Input values for the variables (Environment-specific setup).
 *   `outputs.tf`: Important resource information (Public IPs, IDs).
 *   `backend.tf`: Configuration for the S3 remote backend.
+*   `screenshoots/`: Directory containing screenshots of the deployment and console verification.
 
 ## Prerequisites
 1.  **Terraform v1.5+** installed.
@@ -48,10 +52,16 @@ Once the S3 bucket exists:
     ```
 3.  Type **`yes`** when prompted to copy the local state to S3.
 
+![Migrating State](./screenshoots/migrating.png)
+
 ### 4. Verification
 *   **Web Server**: Run `curl http://$(terraform output -raw instance_public_ip)` to see the Nginx welcome message.
 *   **Remote State**: Verify the `terraform.tfstate` file exists in your S3 bucket via the AWS Console.
 *   **Locking**: Verify the DynamoDB table `terraform-state-locks` is created for state locking.
+
+![S3 Backend](./screenshoots/s3-bucket-with-terraform-state.png)
+![DynamoDB Locking](./screenshoots/dynamodb-with-state-lock.png)
+![Running EC2](./screenshoots/running-instances.png)
 
 ### 5. Cleanup
 To destroy all provisioned resources:
@@ -59,3 +69,4 @@ To destroy all provisioned resources:
 # Update backend.tf by commenting out the s3 block and running init -reconfigure first if S3 is deleted
 terraform destroy -auto-approve
 ```
+![Confirm Destruction](./screenshoots/confirm.png)
